@@ -71,6 +71,7 @@ body {
 #day-counter {
   cursor: pointer;
   user-select: none;
+  -webkit-user-select: none;
   transition: transform 0.2s;
 }
 
@@ -86,6 +87,8 @@ body {
 }
 
 .settings-btn {
+  -webkit-appearance: none;
+  appearance: none;
   position: absolute;
   right: 16px;
   top: 16px;
@@ -121,6 +124,8 @@ body {
 }
 
 .calendar-header button {
+  -webkit-appearance: none;
+  appearance: none;
   background: var(--pink-lighter);
   border: none;
   color: var(--pink);
@@ -133,7 +138,8 @@ body {
   transition: background 0.2s;
 }
 
-.calendar-header button:hover { background: var(--pink-light); }
+.calendar-header button:hover,
+.calendar-header button:focus-visible { background: var(--pink-light); }
 
 #month-year-label {
   font-size: 16px;
@@ -169,7 +175,8 @@ body {
   position: relative;
 }
 
-.calendar-day:hover { background: var(--pink-lighter); }
+.calendar-day:hover,
+.calendar-day:focus-visible { background: var(--pink-lighter); }
 
 .calendar-day.today {
   color: var(--pink);
@@ -185,9 +192,9 @@ body {
 
 .calendar-day.selected.today { border-color: white; }
 
-.calendar-day.other-month { color: #ccc; cursor: default; }
+.calendar-day.other-month { color: #ccc; cursor: default; user-select: none; -webkit-user-select: none; }
 
-.calendar-day.future { color: #ddd; cursor: default; pointer-events: none; }
+.calendar-day.future { color: #ddd; cursor: default; pointer-events: none; user-select: none; -webkit-user-select: none; }
 
 .calendar-dot {
   width: 5px;
@@ -294,13 +301,15 @@ body {
   transition: all 0.15s;
 }
 
-.diary-actions button:hover {
+.diary-actions button:hover,
+.diary-actions button:focus-visible {
   background: var(--pink-lighter);
   color: var(--pink);
   border-color: var(--pink-light);
 }
 
-.diary-actions .btn-delete:hover {
+.diary-actions .btn-delete:hover,
+.diary-actions .btn-delete:focus-visible {
   background: #fff0f0;
   color: #e74c3c;
   border-color: #ffcccc;
@@ -387,6 +396,8 @@ body {
 }
 
 .mood-btn {
+  -webkit-appearance: none;
+  appearance: none;
   font-size: 32px;
   background: none;
   border: 3px solid transparent;
@@ -401,7 +412,8 @@ body {
   padding: 0;
 }
 
-.mood-btn:hover { background: var(--pink-lighter); transform: scale(1.1); }
+.mood-btn:hover,
+.mood-btn:focus-visible { background: var(--pink-lighter); transform: scale(1.1); }
 
 .mood-btn.selected {
   border-color: var(--pink);
