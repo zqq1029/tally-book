@@ -1,20 +1,21 @@
 // === Photo compression utility ===
 function compressPhoto(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
     reader.onload = function(e) {
-      const img = new Image();
+      var img = new Image();
       img.onload = function() {
-        const canvas = document.createElement('canvas');
-        let { width, height } = img;
-        const maxW = 800;
+        var canvas = document.createElement('canvas');
+        var width = img.width;
+        var height = img.height;
+        var maxW = 800;
         if (width > maxW) {
           height = Math.round(height * (maxW / width));
           width = maxW;
         }
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext('2d');
+        var ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
@@ -27,17 +28,17 @@ function compressPhoto(file) {
 }
 
 // === IndexedDB ===
-const DB_NAME = 'loveDiary';
-const DB_VERSION = 1;
-const STORE_NAME = 'entries';
+var DB_NAME = 'loveDiary';
+var DB_VERSION = 1;
+var STORE_NAME = 'entries';
 
 function openDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+  return new Promise(function(resolve, reject) {
+    var request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = function(e) {
-      const db = e.target.result;
+      var db = e.target.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+        var store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
         store.createIndex('date', 'date', { unique: false });
         store.createIndex('createdAt', 'createdAt', { unique: false });
       }
@@ -50,12 +51,13 @@ function openDB() {
 function addEntry(entry) {
   return openDB().then(function(db) {
     return new Promise(function(resolve, reject) {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.add(entry);
+      var tx = db.transaction(STORE_NAME, 'readwrite');
+      var store = tx.objectStore(STORE_NAME);
+      var request = store.add(entry);
       request.onsuccess = function(e) { resolve(e.target.result); };
       request.onerror = function(e) { reject(e.target.error); };
       tx.oncomplete = function() { db.close(); };
+      tx.onabort = function() { db.close(); };
     });
   });
 }
@@ -63,12 +65,12 @@ function addEntry(entry) {
 function getEntriesByDate(date) {
   return openDB().then(function(db) {
     return new Promise(function(resolve, reject) {
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const store = tx.objectStore(STORE_NAME);
-      const index = store.index('date');
-      const request = index.getAll(date);
+      var tx = db.transaction(STORE_NAME, 'readonly');
+      var store = tx.objectStore(STORE_NAME);
+      var index = store.index('date');
+      var request = index.getAll(date);
       request.onsuccess = function(e) {
-        const results = e.target.result || [];
+        var results = e.target.result || [];
         results.sort(function(a, b) { return b.createdAt.localeCompare(a.createdAt); });
         resolve(results);
       };
@@ -81,9 +83,9 @@ function getEntriesByDate(date) {
 function getAllEntries() {
   return openDB().then(function(db) {
     return new Promise(function(resolve, reject) {
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.getAll();
+      var tx = db.transaction(STORE_NAME, 'readonly');
+      var store = tx.objectStore(STORE_NAME);
+      var request = store.getAll();
       request.onsuccess = function(e) { resolve(e.target.result || []); };
       request.onerror = function(e) { reject(e.target.error); };
       tx.oncomplete = function() { db.close(); };
@@ -94,12 +96,13 @@ function getAllEntries() {
 function updateEntry(id, entry) {
   return openDB().then(function(db) {
     return new Promise(function(resolve, reject) {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.put(Object.assign({}, entry, { id: id }));
+      var tx = db.transaction(STORE_NAME, 'readwrite');
+      var store = tx.objectStore(STORE_NAME);
+      var request = store.put(Object.assign({}, entry, { id: id }));
       request.onsuccess = function(e) { resolve(e.target.result); };
       request.onerror = function(e) { reject(e.target.error); };
       tx.oncomplete = function() { db.close(); };
+      tx.onabort = function() { db.close(); };
     });
   });
 }
@@ -107,18 +110,19 @@ function updateEntry(id, entry) {
 function deleteEntry(id) {
   return openDB().then(function(db) {
     return new Promise(function(resolve, reject) {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.delete(id);
+      var tx = db.transaction(STORE_NAME, 'readwrite');
+      var store = tx.objectStore(STORE_NAME);
+      var request = store.delete(id);
       request.onsuccess = function() { resolve(); };
       request.onerror = function(e) { reject(e.target.error); };
       tx.oncomplete = function() { db.close(); };
+      tx.onabort = function() { db.close(); };
     });
   });
 }
 
 // === localStorage Settings ===
-const SETTINGS_KEY = 'love-diary-settings';
+var SETTINGS_KEY = 'love-diary-settings';
 
 function getSettings() {
   try {
@@ -130,5 +134,9 @@ function getSettings() {
 }
 
 function saveSettings(settings) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch (e) {
+    // localStorage full — silently fail, caller should handle
+  }
 }
