@@ -64,6 +64,12 @@
   }
 
   function onSave(editingId, entryData) {
+    if (entryData.photos && entryData.photos.length > 0) {
+      var estimated = estimateStorageUsage() + entryData.photos.reduce(function(s, p) { return s + p.length; }, 0);
+      if (estimated > 50 * 1024 * 1024) {
+        alert('存储空间可能不足（超过 50MB），建议清理一些旧照片后再添加。');
+      }
+    }
     var promise = editingId
       ? updateEntry(editingId, entryData)
       : addEntry(entryData);
@@ -77,6 +83,15 @@
 
   function onCancel() {
     // nothing needed
+  }
+
+  function estimateStorageUsage() {
+    var total = allEntries.reduce(function(sum, entry) {
+      var textSize = (entry.content || '').length * 2;
+      var photoSize = (entry.photos || []).reduce(function(s, p) { return s + p.length; }, 0);
+      return sum + textSize + photoSize;
+    }, 0);
+    return total;
   }
 
   function showConfirm(message, onConfirm) {
