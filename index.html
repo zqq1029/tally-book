@@ -16,7 +16,9 @@
         <span class="counter-number" id="days-count">--</span>
         <span class="counter-label">天</span>
       </div>
-      <button class="settings-btn" id="settings-btn" title="设置起始日期"></button>
+      <button class="settings-btn" id="settings-btn" aria-label="设置起始日期">
+        <span class="sr-only">设置起始日期</span>
+      </button>
     </div>
   </header>
 
@@ -47,10 +49,11 @@
   </section>
 
   <!-- Settings Modal -->
-  <div class="modal-overlay" id="settings-modal">
+  <div class="modal-overlay" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
     <div class="modal-content">
-      <h3>设置起始日期</h3>
+      <h3 id="settings-modal-title">设置起始日期</h3>
       <p>选择我们在一起的起始日期</p>
+      <label for="start-date-input" class="sr-only">起始日期</label>
       <input type="date" id="start-date-input">
       <div class="modal-actions">
         <button class="btn-cancel" id="settings-cancel">取消</button>
@@ -60,7 +63,7 @@
   </div>
 
   <!-- Editor Modal -->
-  <div class="modal-overlay" id="editor-modal">
+  <div class="modal-overlay" id="editor-modal" role="dialog" aria-modal="true" aria-labelledby="editor-title">
     <div class="modal-content modal-editor">
       <h3 id="editor-title">记录此刻</h3>
       <div class="mood-selector" id="mood-selector">
@@ -71,6 +74,7 @@
         <button class="mood-btn" data-mood="sad">&#x1F622;</button>
         <button class="mood-btn" data-mood="miss">&#x1F97A;</button>
       </div>
+      <label for="editor-content" class="sr-only">日记内容</label>
       <textarea id="editor-content" placeholder="今天发生了什么..."></textarea>
       <div class="photo-upload-area">
         <div class="photo-previews" id="photo-previews"></div>
@@ -87,9 +91,9 @@
   </div>
 
   <!-- Photo Viewer Modal -->
-  <div class="modal-overlay" id="photo-viewer">
+  <div class="modal-overlay" id="photo-viewer" role="dialog" aria-modal="true" aria-label="照片查看">
     <div class="photo-viewer-content">
-      <button class="photo-viewer-close" id="photo-viewer-close">&times;</button>
+      <button class="photo-viewer-close" id="photo-viewer-close" aria-label="关闭">&times;</button>
       <img id="photo-viewer-img" src="" alt="照片">
       <div class="photo-viewer-nav">
         <button id="photo-prev">&lt;</button>
