@@ -10,3 +10,587 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* === Reset & Base === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --pink: #ff6b9d;
+  --pink-light: #ffe0eb;
+  --pink-lighter: #fff0f5;
+  --text: #333;
+  --text-light: #888;
+  --bg: #fafafa;
+  --white: #fff;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --radius: 12px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding-bottom: 40px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* === Header === */
+#header {
+  background: linear-gradient(135deg, var(--pink), #ff8e8e);
+  color: white;
+  padding: 28px 20px 24px;
+  text-align: center;
+  position: relative;
+  border-radius: 0 0 24px 24px;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.heart-icon::before {
+  content: "💕";
+  font-size: 28px;
+  animation: heartbeat 1.2s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.2); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.15); }
+  60% { transform: scale(1); }
+}
+
+#day-counter {
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s;
+}
+
+#day-counter:hover { transform: scale(1.05); }
+
+.counter-label { font-size: 14px; opacity: 0.9; display: block; }
+
+.counter-number {
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -1px;
+}
+
+.settings-btn {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+
+.settings-btn:hover { background: rgba(255,255,255,0.35); }
+
+.settings-btn::before { content: "⚙"; }
+
+/* === Calendar === */
+#calendar-section {
+  background: var(--white);
+  margin: 16px;
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.calendar-header button {
+  background: var(--pink-lighter);
+  border: none;
+  color: var(--pink);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.calendar-header button:hover { background: var(--pink-light); }
+
+#month-year-label {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-light);
+  margin-bottom: 8px;
+  padding: 4px 0;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.calendar-day:hover { background: var(--pink-lighter); }
+
+.calendar-day.today {
+  color: var(--pink);
+  font-weight: 700;
+  border: 2px solid var(--pink);
+}
+
+.calendar-day.selected {
+  background: var(--pink);
+  color: white;
+  font-weight: 600;
+}
+
+.calendar-day.selected.today { border-color: white; }
+
+.calendar-day.other-month { color: #ccc; cursor: default; }
+
+.calendar-day.future { color: #ddd; cursor: default; pointer-events: none; }
+
+.calendar-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--pink);
+  position: absolute;
+  bottom: 6px;
+}
+
+.calendar-day.selected .calendar-dot { background: white; }
+
+/* === Diary Section === */
+#diary-section {
+  margin: 0 16px 16px;
+}
+
+.diary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.diary-header h2 { font-size: 18px; font-weight: 600; }
+
+#add-entry-btn {
+  background: var(--pink);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+#add-entry-btn:hover { opacity: 0.9; }
+
+/* === Diary Cards === */
+.diary-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  position: relative;
+}
+
+.diary-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.diary-mood { font-size: 28px; }
+
+.diary-time {
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+.diary-content {
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 10px;
+  white-space: pre-wrap;
+}
+
+.diary-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.diary-photo {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.diary-photo:hover { transform: scale(1.03); }
+
+.diary-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.diary-actions button {
+  background: none;
+  border: 1px solid #eee;
+  padding: 4px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-light);
+  transition: all 0.15s;
+}
+
+.diary-actions button:hover {
+  background: var(--pink-lighter);
+  color: var(--pink);
+  border-color: var(--pink-light);
+}
+
+.diary-actions .btn-delete:hover {
+  background: #fff0f0;
+  color: #e74c3c;
+  border-color: #ffcccc;
+}
+
+/* === Empty State === */
+#diary-empty {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--text-light);
+  display: none;
+}
+
+#diary-empty p {
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+#diary-empty button,
+#add-entry-empty-btn {
+  background: var(--pink-lighter);
+  color: var(--pink);
+  border: 2px dashed var(--pink-light);
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#diary-empty button:hover { background: var(--pink-light); }
+
+/* === Modal === */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal-content {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.modal-content h3 {
+  font-size: 18px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.modal-content p { color: var(--text-light); font-size: 14px; margin-bottom: 16px; text-align: center; }
+
+/* === Settings Modal === */
+#start-date-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  text-align: center;
+}
+
+/* === Editor Modal === */
+.modal-editor { max-width: 440px; }
+
+.mood-selector {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mood-btn {
+  font-size: 32px;
+  background: none;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.mood-btn:hover { background: var(--pink-lighter); transform: scale(1.1); }
+
+.mood-btn.selected {
+  border-color: var(--pink);
+  background: var(--pink-lighter);
+  transform: scale(1.15);
+}
+
+#editor-content {
+  width: 100%;
+  min-height: 100px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+#editor-content:focus { outline: none; border-color: var(--pink); }
+
+.photo-upload-area { margin-bottom: 16px; }
+
+.photo-previews {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.photo-preview-item {
+  aspect-ratio: 1;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.photo-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-preview-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.add-photo-btn {
+  display: block;
+  text-align: center;
+  padding: 10px;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  color: var(--text-light);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+
+.add-photo-btn:hover { border-color: var(--pink); color: var(--pink); }
+
+/* === Modal Actions === */
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.btn-cancel, .btn-save {
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.btn-cancel {
+  background: #f0f0f0;
+  border: none;
+  color: var(--text);
+}
+
+.btn-cancel:hover { background: #e0e0e0; }
+
+.btn-save {
+  background: var(--pink);
+  border: none;
+  color: white;
+}
+
+.btn-save:hover { opacity: 0.9; }
+
+/* === Photo Viewer === */
+#photo-viewer .photo-viewer-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+#photo-viewer-img {
+  max-width: 90vw;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.photo-viewer-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 36px;
+  height: 36px;
+  background: var(--white);
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  color: var(--text);
+  z-index: 1;
+}
+
+.photo-viewer-nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.photo-viewer-nav button {
+  background: rgba(255,255,255,0.8);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.photo-viewer-nav span { color: white; font-size: 14px; }
+
+/* === Confirm Dialog === */
+.confirm-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.confirm-overlay.active { display: flex; }
+
+.confirm-box {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  max-width: 320px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.confirm-box p { margin-bottom: 20px; font-size: 16px; }
+
+.confirm-box .confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* === Responsive === */
+@media (min-width: 600px) {
+  body { padding-top: 16px; }
+  #header { border-radius: 24px; margin: 0 16px; }
+}
