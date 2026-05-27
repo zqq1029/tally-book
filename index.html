@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我们的日子</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Day Counter Header -->
+  <header id="header">
+    <div class="header-content">
+      <span class="heart-icon"></span>
+      <div id="day-counter">
+        <span class="counter-label">我们已经在一起</span>
+        <span class="counter-number" id="days-count">--</span>
+        <span class="counter-label">天</span>
+      </div>
+      <button class="settings-btn" id="settings-btn" title="设置起始日期"></button>
+    </div>
+  </header>
+
+  <!-- Calendar Section -->
+  <section id="calendar-section">
+    <div class="calendar-header">
+      <button id="prev-month">&lt;</button>
+      <span id="month-year-label">2026年5月</span>
+      <button id="next-month">&gt;</button>
+    </div>
+    <div class="calendar-weekdays">
+      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+    </div>
+    <div class="calendar-grid" id="calendar-grid"></div>
+  </section>
+
+  <!-- Diary Section -->
+  <section id="diary-section">
+    <div class="diary-header">
+      <h2 id="diary-date-label">5月28日</h2>
+      <button id="add-entry-btn">+ 记录今天</button>
+    </div>
+    <div id="diary-list"></div>
+    <div class="diary-empty" id="diary-empty">
+      <p>这天还没有记录</p>
+      <button id="add-entry-empty-btn">记录此刻的心情吧</button>
+    </div>
+  </section>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-content">
+      <h3>设置起始日期</h3>
+      <p>选择我们在一起的起始日期</p>
+      <input type="date" id="start-date-input">
+      <div class="modal-actions">
+        <button class="btn-cancel" id="settings-cancel">取消</button>
+        <button class="btn-save" id="settings-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Editor Modal -->
+  <div class="modal-overlay" id="editor-modal">
+    <div class="modal-content modal-editor">
+      <h3 id="editor-title">记录此刻</h3>
+      <div class="mood-selector" id="mood-selector">
+        <button class="mood-btn" data-mood="happy">&#x1F60A;</button>
+        <button class="mood-btn" data-mood="love">&#x1F60D;</button>
+        <button class="mood-btn" data-mood="excited">&#x1F606;</button>
+        <button class="mood-btn" data-mood="normal">&#x1F642;</button>
+        <button class="mood-btn" data-mood="sad">&#x1F622;</button>
+        <button class="mood-btn" data-mood="miss">&#x1F97A;</button>
+      </div>
+      <textarea id="editor-content" placeholder="今天发生了什么..."></textarea>
+      <div class="photo-upload-area">
+        <div class="photo-previews" id="photo-previews"></div>
+        <label class="add-photo-btn" id="add-photo-label">
+          + 添加照片
+          <input type="file" id="photo-input" accept="image/*" hidden multiple>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="editor-cancel">取消</button>
+        <button class="btn-save" id="editor-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photo Viewer Modal -->
+  <div class="modal-overlay" id="photo-viewer">
+    <div class="photo-viewer-content">
+      <button class="photo-viewer-close" id="photo-viewer-close">&times;</button>
+      <img id="photo-viewer-img" src="" alt="照片">
+      <div class="photo-viewer-nav">
+        <button id="photo-prev">&lt;</button>
+        <span id="photo-index">1/4</span>
+        <button id="photo-next">&gt;</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="js/diary.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
