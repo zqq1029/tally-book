@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图片工具箱</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, sans-serif; background: #f5f5f5; color: #333; }
+.header { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 40px 20px; text-align: center; }
+.header h1 { font-size: 28px; margin-bottom: 8px; }
+.header p { opacity: 0.8; font-size: 14px; }
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.section { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.section h2 { font-size: 18px; margin-bottom: 16px; color: #333; }
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab { padding: 8px 16px; border: 1px solid #ddd; border-radius: 20px; background: #fff; cursor: pointer; font-size: 13px; }
+.tab.active { background: #667eea; color: #fff; border-color: #667eea; }
+.preview { border: 1px solid #eee; border-radius: 12px; padding: 20px; text-align: center; min-height: 200px; display: flex; align-items: center; justify-content: center; background: #fafafa; margin-bottom: 16px; }
+.preview canvas, preview svg { max-width: 100%; }
+.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.controls label { font-size: 13px; color: #666; display: block; margin-bottom: 4px; }
+.controls input, controls select { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+.btn-group { display: flex; gap: 10px; }
+.btn { padding: 10px 20px; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; font-weight: 600; }
+.btn-primary { background: #667eea; color: #fff; }
+.btn-success { background: #4CAF50; color: #fff; }
+.btn-secondary { background: #eee; color: #333; }
+.color-row { display: flex; gap: 8px; align-items: center; }
+.color-row input[type="color"] { width: 40px; height: 32px; border: 1px solid #ddd; border-radius: 6px; padding: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>  图片工具箱</h1>
+  <p>生成网页插图、图标、背景、PPT 图片</p>
+</div>
+
+<div class="container">
+
+  <!-- SVG 图标生成 -->
+  <div class="section">
+    <h2>  SVG 图标生成</h2>
+    <div class="tabs">
+      <div class="tab active" data-icon="check">✓ 完成</div>
+      <div class="tab" data-icon="star">★ 星标</div>
+      <div class="tab" data-icon="heart">♥ 爱心</div>
+      <div class="tab" data-icon="bolt">⚡ 闪电</div>
+      <div class="tab" data-icon="leaf">  叶子</div>
+      <div class="tab" data-icon="fire">  火焰</div>
+    </div>
+    <div class="controls">
+      <div><label>尺寸</label><input type="range" id="iconSize" min="32" max="256" value="128"><span id="iconSizeVal">128</span>px</div>
+      <div class="color-row"><label>颜色</label><input type="color" id="iconColor" value="#4CAF50"><input type="color" id="iconBg" value="#E8F5E9"></div>
+    </div>
+    <div class="preview" id="iconPreview"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="downloadSVG('iconPreview', 'icon.svg')">下载 SVG</button>
+      <button class="btn btn-success" onclick="downloadPNG('iconPreview', 'icon.png')">下载 PNG</button>
+    </div>
+  </div>
+
+  <!-- 渐变卡片生成 -->
+  <div class="section">
+    <h2>  渐变卡片</h2>
+    <div class="tabs">
+      <div class="tab active" data-gradient="green">绿色</div>
+      <div class="tab" data-gradient="blue">蓝色</div>
+      <div class="tab" data-gradient="purple">紫色</div>
+      <div class="tab" data-gradient="sunset">日落</div>
+      <div class="tab" data-gradient="ocean">海洋</div>
+    </div>
+    <div class="controls">
+      <div><label>宽度</label><input type="number" id="cardW" value="800"></div>
+      <div><label>高度</label><input type="number" id="cardH" value="400"></div>
+      <div><label>标题</label><input type="text" id="cardTitle" value="每日记账"></div>
+      <div><label>副标题</label><input type="text" id="cardSub" value="轻松管理你的财务"></div>
+    </div>
+    <div class="preview" id="cardPreview"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="downloadCanvas('cardCanvas', 'card.png')">下载 PNG</button>
+    </div>
+  </div>
+
+  <!-- 空状态插图 -->
+  <div class="section">
+    <h2>  空状态插图</h2>
+    <div class="tabs">
+      <div class="tab active" data-empty="no-data">暂无数据</div>
+      <div class="tab" data-empty="no-result">搜索无结果</div>
+      <div class="tab" data-empty="success">操作成功</div>
+      <div class="tab" data-empty="error">出错了</div>
+      <div class="tab" data-empty="empty-cart">购物车为空</div>
+    </div>
+    <div class="preview" id="emptyPreview"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="downloadSVG('emptyPreview', 'empty-state.svg')">下载 SVG</button>
+      <button class="btn btn-success" onclick="downloadPNG('emptyPreview', 'empty-state.png')">下载 PNG</button>
+    </div>
+  </div>
+
+  <!-- 装饰背景 -->
+  <div class="section">
+    <h2>✨ 装饰背景</h2>
+    <div class="tabs">
+      <div class="tab active" data-bg="dots">圆点</div>
+      <div class="tab" data-bg="grid">网格</div>
+      <div class="tab" data-bg="waves">波浪</div>
+      <div class="tab" data-bg="gradient-mesh">渐变网格</div>
+      <div class="tab" data-bg="noise">噪点</div>
+    </div>
+    <div class="controls">
+      <div><label>宽度</label><input type="number" id="bgW" value="1200"></div>
+      <div><label>高度</label><input type="number" id="bgH" value="630"></div>
+    </div>
+    <div class="preview" id="bgPreview" style="min-height:300px"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="downloadCanvas('bgCanvas', 'background.png')">下载 PNG</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// === Icon Generator ===
+const ICONS = {
+  check: (s,c) => `<path d="M${s*0.25} ${s*0.52} L${s*0.42} ${s*0.68} L${s*0.75} ${s*0.32}" fill="none" stroke="${c}" stroke-width="${s*0.08}" stroke-linecap="round" stroke-linejoin="round"/>`,
+  star: (s,c) => {
+    const cx=s/2, cy=s/2, r=s*0.35, ir=s*0.15;
+    let pts='';
+    for(let i=0;i<5;i++){const a1=Math.PI/2+i*Math.PI*2/5,a2=a1+Math.PI*2/10;
+      pts+=`${cx+r*Math.cos(a1)},${cy-r*Math.sin(a1)} ${cx+ir*Math.cos(a2)},${cy-ir*Math.sin(a2)} `;
+    }
+    return `<polygon points="${pts.trim()}" fill="${c}"/>`;
+  },
+  heart: (s,c) => `<path d="M${s/2} ${s*0.8} C${s*0.15} ${s*0.55} ${s*0.05} ${s*0.3} ${s*0.25} ${s*0.2} C${s*0.4} ${s*0.12} ${s/2} ${s*0.25} ${s/2} ${s*0.35} C${s/2} ${s*0.25} ${s*0.6} ${s*0.12} ${s*0.75} ${s*0.2} C${s*0.95} ${s*0.3} ${s*0.85} ${s*0.55} ${s/2} ${s*0.8}Z" fill="${c}"/>`,
+  bolt: (s,c) => `<polygon points="${s*0.45},${s*0.1} ${s*0.3},${s*0.5} ${s*0.48},${s*0.5} ${s*0.38},${s*0.9} ${s*0.7},${s*0.42} ${s*0.52},${s*0.42}" fill="${c}"/>`,
+  leaf: (s,c) => `<path d="M${s*0.5} ${s*0.15} C${s*0.85} ${s*0.15} ${s*0.9} ${s*0.6} ${s*0.5} ${s*0.85} C${s*0.1} ${s*0.6} ${s*0.15} ${s*0.15} ${s*0.5} ${s*0.15}Z" fill="${c}" opacity="0.9"/><path d="M${s*0.5} ${s*0.85} Q${s*0.5} ${s*0.5} ${s*0.5} ${s*0.15}" fill="none" stroke="${c}" stroke-width="${s*0.03}" opacity="0.5"/>`,
+  fire: (s,c) => `<path d="M${s*0.5} ${s*0.1} C${s*0.65} ${s*0.3} ${s*0.85} ${s*0.5} ${s*0.7} ${s*0.75} C${s*0.6} ${s*0.9} ${s*0.4} ${s*0.9} ${s*0.3} ${s*0.75} C${s*0.15} ${s*0.5} ${s*0.35} ${s*0.3} ${s*0.5} ${s*0.1}Z" fill="${c}"/><path d="M${s*0.5} ${s*0.4} C${s*0.58} ${s*0.5} ${s*0.65} ${s*0.62} ${s*0.55} ${s*0.75} C${s*0.5} ${s*0.82} ${s*0.42} ${s*0.78} ${s*0.4} ${s*0.7} C${s*0.35} ${s*0.58} ${s*0.42} ${s*0.48} ${s*0.5} ${s*0.4}Z" fill="#FF9800" opacity="0.8"/>`
+};
+
+let currentIcon = 'check';
+function renderIcon() {
+  const s = +document.getElementById('iconSize').value;
+  const c = document.getElementById('iconColor').value;
+  const bg = document.getElementById('iconBg').value;
+  document.getElementById('iconSizeVal').textContent = s;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${s} ${s}" width="${s}" height="${s}">
+    <circle cx="${s/2}" cy="${s/2}" r="${s/2-2}" fill="${bg}"/>
+    ${ICONS[currentIcon](s, c)}
+  </svg>`;
+  document.getElementById('iconPreview').innerHTML = svg;
+}
+
+document.querySelectorAll('[data-icon]').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('[data-icon]').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    currentIcon = t.dataset.icon;
+    renderIcon();
+  };
+});
+document.getElementById('iconSize').oninput = renderIcon;
+document.getElementById('iconColor').oninput = renderIcon;
+document.getElementById('iconBg').oninput = renderIcon;
+renderIcon();
+
+// === Gradient Card ===
+const GRADIENTS = {
+  green: ['#4CAF50','#81C784'], blue: ['#2196F3','#64B5F6'],
+  purple: ['#9C27B0','#CE93D8'], sunset: ['#FF5722','#FFB74D'],
+  ocean: ['#009688','#4DB6AC']
+};
+let currentGradient = 'green';
+function renderCard() {
+  const w = +document.getElementById('cardW').value;
+  const h = +document.getElementById('cardH').value;
+  const title = document.getElementById('cardTitle').value;
+  const sub = document.getElementById('cardSub').value;
+  const colors = GRADIENTS[currentGradient];
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.id = 'cardCanvas';
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, w, h);
+  grad.addColorStop(0, colors[0]);
+  grad.addColorStop(1, colors[1]);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(16, 0); ctx.lineTo(w-16, 0);
+  ctx.quadraticCurveTo(w, 0, w, 16); ctx.lineTo(w, h-16);
+  ctx.quadraticCurveTo(w, h, w-16, h); ctx.lineTo(16, h);
+  ctx.quadraticCurveTo(0, h, 0, h-16); ctx.lineTo(0, 16);
+  ctx.quadraticCurveTo(0, 0, 16, 0);
+  ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.round(h*0.12)}px sans-serif`;
+  ctx.textAlign = 'center'; ctx.fillText(title, w/2, h*0.42);
+  ctx.font = `${Math.round(h*0.06)}px sans-serif`; ctx.globalAlpha = 0.85;
+  ctx.fillText(sub, w/2, h*0.58);
+  const preview = document.getElementById('cardPreview');
+  preview.innerHTML = ''; preview.appendChild(canvas);
+}
+document.querySelectorAll('[data-gradient]').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('[data-gradient]').forEach(x => x.classList.remove('active'));
+    t.classList.add('active'); currentGradient = t.dataset.gradient; renderCard();
+  };
+});
+['cardW','cardH','cardTitle','cardSub'].forEach(id =>
+  document.getElementById(id).oninput = renderCard);
+renderCard();
+
+// === Empty State Illustrations ===
+function renderEmpty() {
+  const type = document.querySelector('[data-empty].active')?.dataset.empty || 'no-data';
+  const svgs = {
+    'no-data': `<svg viewBox="0 0 200 200" width="200" height="200">
+      <circle cx="100" cy="80" r="45" fill="#E3F2FD" stroke="#90CAF9" stroke-width="2"/>
+      <rect x="70" y="68" width="60" height="4" rx="2" fill="#90CAF9"/>
+      <rect x="80" y="80" width="40" height="4" rx="2" fill="#BBDEFB"/>
+      <rect x="75" y="92" width="50" height="4" rx="2" fill="#BBDEFB"/>
+      <rect x="60" y="140" width="80" height="8" rx="4" fill="#E0E0E0"/>
+      <rect x="75" y="156" width="50" height="6" rx="3" fill="#EEEEEE"/>
+    </svg>`,
+    'no-result': `<svg viewBox="0 0 200 200" width="200" height="200">
+      <circle cx="90" cy="90" r="40" fill="none" stroke="#BDBDBD" stroke-width="4"/>
+      <line x1="120" y1="120" x2="150" y2="150" stroke="#BDBDBD" stroke-width="6" stroke-linecap="round"/>
+      <line x1="78" y1="82" x2="102" y2="98" stroke="#E0E0E0" stroke-width="3" stroke-linecap="round"/>
+      <line x1="102" y1="82" x2="78" y2="98" stroke="#E0E0E0" stroke-width="3" stroke-linecap="round"/>
+      <rect x="60" y="160" width="80" height="6" rx="3" fill="#EEEEEE"/>
+    </svg>`,
+    'success': `<svg viewBox="0 0 200 200" width="200" height="200">
+      <circle cx="100" cy="85" r="45" fill="#E8F5E9" stroke="#81C784" stroke-width="3"/>
+      <path d="M78 85 L93 100 L122 70" fill="none" stroke="#4CAF50" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="65" y="148" width="70" height="8" rx="4" fill="#C8E6C9"/>
+      <rect x="80" y="164" width="40" height="6" rx="3" fill="#E8F5E9"/>
+    </svg>`,
+    'error': `<svg viewBox="0 0 200 200" width="200" height="200">
+      <circle cx="100" cy="85" r="45" fill="#FFEBEE" stroke="#EF9A9A" stroke-width="3"/>
+      <line x1="82" y1="67" x2="118" y2="103" stroke="#E53935" stroke-width="6" stroke-linecap="round"/>
+      <line x1="118" y1="67" x2="82" y2="103" stroke="#E53935" stroke-width="6" stroke-linecap="round"/>
+      <rect x="60" y="148" width="80" height="8" rx="4" fill="#FFCDD2"/>
+      <rect x="75" y="164" width="50" height="6" rx="3" fill="#FFEBEE"/>
+    </svg>`,
+    'empty-cart': `<svg viewBox="0 0 200 200" width="200" height="200">
+      <path d="M55 60 L70 60 L85 130 L145 130 L155 75 L75 75" fill="none" stroke="#BDBDBD" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="95" cy="145" r="10" fill="none" stroke="#BDBDBD" stroke-width="3"/>
+      <circle cx="135" cy="145" r="10" fill="none" stroke="#BDBDBD" stroke-width="3"/>
+      <line x1="90" y1="95" x2="140" y2="95" stroke="#E0E0E0" stroke-width="2" stroke-linecap="round"/>
+      <rect x="65" y="168" width="70" height="6" rx="3" fill="#EEEEEE"/>
+    </svg>`
+  };
+  document.getElementById('emptyPreview').innerHTML = svgs[type] || svgs['no-data'];
+}
+document.querySelectorAll('[data-empty]').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('[data-empty]').forEach(x => x.classList.remove('active'));
+    t.classList.add('active'); renderEmpty();
+  };
+});
+renderEmpty();
+
+// === Background Generator ===
+function renderBg() {
+  const type = document.querySelector('[data-bg].active')?.dataset.bg || 'dots';
+  const w = +document.getElementById('bgW').value;
+  const h = +document.getElementById('bgH').value;
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.id = 'bgCanvas';
+  const ctx = canvas.getContext('2d');
+
+  switch(type) {
+    case 'dots':
+      ctx.fillStyle = '#FAFAFA'; ctx.fillRect(0,0,w,h);
+      ctx.fillStyle = 'rgba(76,175,80,0.15)';
+      for(let x=0;x<w;x+=24) for(let y=0;y<h;y+=24){ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fill();}
+      break;
+    case 'grid':
+      ctx.fillStyle = '#FAFAFA'; ctx.fillRect(0,0,w,h);
+      ctx.strokeStyle = 'rgba(0,0,0,0.06)'; ctx.lineWidth = 1;
+      for(let x=0;x<w;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}
+      for(let y=0;y<h;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+      break;
+    case 'waves':
+      const grad = ctx.createLinearGradient(0,0,w,h);
+      grad.addColorStop(0,'#667eea'); grad.addColorStop(1,'#764ba2');
+      ctx.fillStyle = grad; ctx.fillRect(0,0,w,h);
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      for(let i=0;i<5;i++){
+        ctx.beginPath(); ctx.moveTo(0,h*0.3+i*30);
+        for(let x=0;x<=w;x+=10) ctx.lineTo(x,h*0.3+i*30+Math.sin(x/100+i)*40);
+        ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.fill();
+      }
+      break;
+    case 'gradient-mesh':
+      ctx.fillStyle = '#4158D0'; ctx.fillRect(0,0,w,h);
+      const g1 = ctx.createRadialGradient(w*0.3,h*0.3,0,w*0.3,h*0.3,w*0.5);
+      g1.addColorStop(0,'rgba(200,80,192,0.6)'); g1.addColorStop(1,'transparent');
+      ctx.fillStyle = g1; ctx.fillRect(0,0,w,h);
+      const g2 = ctx.createRadialGradient(w*0.7,h*0.7,0,w*0.7,h*0.7,w*0.5);
+      g2.addColorStop(0,'rgba(255,204,112,0.5)'); g2.addColorStop(1,'transparent');
+      ctx.fillStyle = g2; ctx.fillRect(0,0,w,h);
+      break;
+    case 'noise':
+      ctx.fillStyle = '#f5f5f5'; ctx.fillRect(0,0,w,h);
+      const imgData = ctx.createImageData(w,h);
+      for(let i=0;i<imgData.data.length;i+=4){
+        const v = Math.random()*255;
+        imgData.data[i]=v; imgData.data[i+1]=v; imgData.data[i+2]=v;
+        imgData.data[i+3]=15;
+      }
+      ctx.putImageData(imgData,0,0);
+      break;
+  }
+  const preview = document.getElementById('bgPreview');
+  preview.innerHTML = ''; preview.appendChild(canvas);
+}
+document.querySelectorAll('[data-bg]').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('[data-bg]').forEach(x => x.classList.remove('active'));
+    t.classList.add('active'); renderBg();
+  };
+});
+['bgW','bgH'].forEach(id => document.getElementById(id).oninput = renderBg);
+renderBg();
+
+// === Download Helpers ===
+function downloadSVG(containerId, filename) {
+  const el = document.getElementById(containerId);
+  const svg = el.querySelector('svg');
+  if (!svg) return;
+  const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename; a.click();
+}
+
+function downloadPNG(containerId, filename) {
+  const el = document.getElementById(containerId);
+  const svg = el.querySelector('svg');
+  const canvas = el.querySelector('canvas');
+  if (canvas) {
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = filename; a.click();
+    return;
+  }
+  if (svg) {
+    const c = document.createElement('canvas');
+    const w = svg.getAttribute('width') || svg.viewBox?.baseVal?.width || 200;
+    const h = svg.getAttribute('height') || svg.viewBox?.baseVal?.height || 200;
+    c.width = w*2; c.height = h*2;
+    const ctx = c.getContext('2d');
+    const img = new Image();
+    img.onload = () => { ctx.drawImage(img,0,0,c.width,c.height);
+      const a = document.createElement('a'); a.href = c.toDataURL('image/png');
+      a.download = filename; a.click(); };
+    img.src = 'data:image/svg+xml;base64,' + btoa(svg.outerHTML);
+  }
+}
+
+function downloadCanvas(canvasId, filename) {
+  const canvas = document.getElementById(canvasId) || document.querySelector('#'+canvasId+' canvas');
+  if (!canvas) return;
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = filename; a.click();
+}
+</script>
+</body>
+</html>
