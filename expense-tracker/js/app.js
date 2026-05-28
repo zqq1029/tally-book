@@ -407,40 +407,50 @@ var App = (function () {
     editingId = null;
   }
 
-  function renderCategoryGrid() {
+  function renderCategoryGrid(matchedName) {
     var grid = $('#category-grid');
     var cats = Config.getAllCategories();
     grid.innerHTML = '';
 
     cats.forEach(function (cat) {
       var btn = document.createElement('button');
-      btn.className = 'cat-btn' + (cat.name === selectedCategory ? ' active' : '');
+      var isMatched = matchedName && cat.name === matchedName;
+      btn.className = 'cat-btn' + (cat.name === selectedCategory ? ' active' : '') + (isMatched ? ' matched' : '');
       btn.innerHTML = '<span class="cat-icon">' + cat.icon + '</span><span>' + cat.name + '</span>';
       btn.addEventListener('click', function () {
         selectedCategory = cat.name;
-        $$('.cat-btn').forEach(function (b) { b.classList.remove('active'); });
+        $$('.cat-btn').forEach(function (b) { b.classList.remove('active', 'matched'); });
         btn.classList.add('active');
       });
       grid.appendChild(btn);
+      if (isMatched) scrollToElement(btn);
     });
   }
 
-  function renderPaymentMethods() {
+  function renderPaymentMethods(matchedName) {
     var container = $('#payment-methods');
     var methods = Config.getAllPaymentMethods();
     container.innerHTML = '';
 
     methods.forEach(function (pm) {
       var btn = document.createElement('button');
-      btn.className = 'pay-label' + (pm.name === selectedPaymentMethod ? ' active' : '');
+      var isMatched = matchedName && pm.name === matchedName;
+      btn.className = 'pay-label' + (pm.name === selectedPaymentMethod ? ' active' : '') + (isMatched ? ' matched' : '');
       btn.textContent = pm.icon + ' ' + pm.name;
       btn.addEventListener('click', function () {
         selectedPaymentMethod = pm.name;
-        $$('.pay-label').forEach(function (b) { b.classList.remove('active'); });
+        $$('.pay-label').forEach(function (b) { b.classList.remove('active', 'matched'); });
         btn.classList.add('active');
       });
       container.appendChild(btn);
+      if (isMatched) scrollToElement(btn);
     });
+  }
+
+  function scrollToElement(el) {
+    setTimeout(function () {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
   }
 
   function compressPhoto(file) {
@@ -659,20 +669,58 @@ var App = (function () {
       $('#manual-mode').classList.remove('hidden');
       $('#voice-mode').classList.add('hidden');
 
-      renderCategoryGrid();
-      renderPaymentMethods();
-      showToast('已识别: ¥' + parsed.amount.toFixed(2));
+      // Render with matched highlight
+      renderCategoryGrid(parsed.category);
+      renderPaymentMethods(parsed.paymentMethod);
+
+      // Build toast message
+      var parts = ['¥' + parsed.amount.toFixed(2)];
+      if (parsed.category) parts.push(parsed.category);
+      if (parsed.paymentMethod) parts.push(parsed.paymentMethod);
+      showToast('已匹配: ' + parts.join(' · '));
     } else {
-      // Fallback: put transcript into note
+      // Fallback: try to match category/payment from transcript directly
+      var matchedCat = fuzzyMatch(transcript, Config.getAllCategories().map(function (c) { return c.name; }));
+      var matchedPay = fuzzyMatch(transcript, Config.getAllPaymentMethods().map(function (p) { return p.name; }));
+
+      if (matchedCat) selectedCategory = matchedCat;
+      if (matchedPay) selectedPaymentMethod = matchedPay;
+
+      // Put remaining text into note
       $('#note-input').value = transcript;
+
       $$('.mode-btn').forEach(function (b) { b.classList.remove('active'); });
       $$('.mode-btn')[0].classList.add('active');
       $('#manual-mode').classList.remove('hidden');
       $('#voice-mode').classList.add('hidden');
-      showToast('未识别金额，已填入备注');
+
+      renderCategoryGrid(matchedCat);
+      renderPaymentMethods(matchedPay);
+
+      if (matchedCat || matchedPay) {
+        var matched = [];
+        if (matchedCat) matched.push(matchedCat);
+        if (matchedPay) matched.push(matchedPay);
+        showToast('已匹配: ' + matched.join(' · '));
+      } else {
+        showToast('未匹配选项，已填入备注');
+      }
     }
 
     currentVoiceResult = null;
+  }
+
+  function fuzzyMatch(text, options) {
+    if (!text || !options || options.length === 0) return null;
+    // Exact match first
+    for (var i = 0; i < options.length; i++) {
+      if (text.indexOf(options[i]) !== -1) return options[i];
+    }
+    // Partial match (option is substring of text or vice versa)
+    for (var j = 0; j < options.length; j++) {
+      if (options[j].indexOf(text) !== -1) return options[j];
+    }
+    return null;
   }
 
   // ── 6. Settings ──────────────────────────────────────────────
