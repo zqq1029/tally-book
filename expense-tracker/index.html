@@ -9,15 +9,23 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- 今日记账 -->
+  <!-- 记账首页 -->
   <section id="page-home" class="page active">
+    <!-- 日期导航 -->
+    <div class="date-nav">
+      <button class="date-arrow" id="date-prev">&#8249;</button>
+      <span class="date-label" id="date-label">今天</span>
+      <button class="date-arrow" id="date-next">&#8250;</button>
+      <button class="date-today-btn hidden" id="date-back-today">回到今天</button>
+      <input type="date" id="date-picker-input" class="hidden-date-input">
+    </div>
     <div class="total-card">
-      <span class="total-label">今日支出</span>
+      <span class="total-label" id="total-label">今日支出</span>
       <span class="total-amount" id="today-total">¥0.00</span>
     </div>
     <div id="expense-list"></div>
     <div class="empty-state" id="empty-state">
-      <p>今天还没有记账</p>
+      <p id="empty-message">今天还没有记账</p>
       <p>点击右下角 + 开始记账</p>
     </div>
     <button class="fab" id="fab-add">+</button>

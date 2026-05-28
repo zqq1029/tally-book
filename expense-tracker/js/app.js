@@ -13,6 +13,7 @@ var App = (function () {
   var selectedPaymentMethod = null;
   var photos = []; // compressed base64 strings
   var currentVoiceResult = null;
+  var selectedDate = null; // defaults to today on init
 
   // ── Helpers ───────────────────────────────────────────────────
 
@@ -29,6 +30,106 @@ var App = (function () {
 
   function $(sel) { return document.querySelector(sel); }
   function $$(sel) { return document.querySelectorAll(sel); }
+
+  // ── Date Navigation Helpers ──────────────────────────────────
+
+  function formatDateLabel(dateStr) {
+    var parts = dateStr.split('-');
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10);
+    var d = parseInt(parts[2], 10);
+    var today = getToday();
+    var yesterday = shiftDate(today, -1);
+    if (dateStr === today) return '今天';
+    if (dateStr === yesterday) return '昨天';
+    return m + '月' + d + '日';
+  }
+
+  function shiftDate(dateStr, days) {
+    var parts = dateStr.split('-');
+    var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    d.setDate(d.getDate() + days);
+    var yy = d.getFullYear();
+    var mm = String(d.getMonth() + 1);
+    var dd = String(d.getDate());
+    return yy + '-' + (mm.length < 2 ? '0' + mm : mm) + '-' + (dd.length < 2 ? '0' + dd : dd);
+  }
+
+  function isToday(dateStr) {
+    return dateStr === getToday();
+  }
+
+  function updateDateDisplay() {
+    var label = $('#date-label');
+    var backBtn = $('#date-back-today');
+    if (label) label.textContent = formatDateLabel(selectedDate);
+    if (backBtn) {
+      if (isToday(selectedDate)) {
+        backBtn.classList.add('hidden');
+      } else {
+        backBtn.classList.remove('hidden');
+      }
+    }
+    var totalLabel = $('#total-label');
+    if (totalLabel) {
+      totalLabel.textContent = isToday(selectedDate) ? '今日支出' : '当日支出';
+    }
+    var emptyMsg = $('#empty-message');
+    if (emptyMsg) {
+      emptyMsg.textContent = isToday(selectedDate) ? '今天还没有记账' : '该日没有记账';
+    }
+  }
+
+  function initDateNav() {
+    selectedDate = getToday();
+    updateDateDisplay();
+
+    $('#date-prev').addEventListener('click', function () {
+      selectedDate = shiftDate(selectedDate, -1);
+      updateDateDisplay();
+      renderHome();
+    });
+
+    $('#date-next').addEventListener('click', function () {
+      var next = shiftDate(selectedDate, 1);
+      if (next > getToday()) return; // 不能超过今天
+      selectedDate = next;
+      updateDateDisplay();
+      renderHome();
+    });
+
+    $('#date-back-today').addEventListener('click', function () {
+      selectedDate = getToday();
+      updateDateDisplay();
+      renderHome();
+    });
+
+    // 点击日期标签打开原生日期选择器
+    $('#date-label').addEventListener('click', function () {
+      var picker = $('#date-picker-input');
+      picker.value = selectedDate;
+      picker.showPicker ? picker.showPicker() : picker.click();
+    });
+
+    $('#date-picker-input').addEventListener('change', function (e) {
+      var val = e.target.value;
+      if (!val) return;
+      if (val > getToday()) val = getToday();
+      selectedDate = val;
+      updateDateDisplay();
+      renderHome();
+    });
+
+    // 凌晨自动推进：每 30 秒检查一次
+    setInterval(function () {
+      var today = getToday();
+      if (selectedDate < today) {
+        selectedDate = today;
+        updateDateDisplay();
+        renderHome();
+      }
+    }, 30000);
+  }
 
   // ── 1. Tab Switching ─────────────────────────────────────────
 
@@ -52,8 +153,8 @@ var App = (function () {
   // ── 2. Home Page ──────────────────────────────────────────────
 
   function renderHome() {
-    var today = getToday();
-    Storage.getExpensesByDate(today).then(function (expenses) {
+    var date = selectedDate || getToday();
+    Storage.getExpensesByDate(date).then(function (expenses) {
       var list = $('#expense-list');
       var empty = $('#empty-state');
       var totalEl = $('#today-total');
@@ -353,7 +454,7 @@ var App = (function () {
     if (!selectedPaymentMethod) { alert('请选择支付方式'); return; }
 
     var expense = {
-      date: getToday(),
+      date: selectedDate || getToday(),
       amount: amount,
       category: selectedCategory,
       paymentMethod: selectedPaymentMethod,
@@ -646,6 +747,7 @@ var App = (function () {
 
   function init() {
     refreshAllData().then(function () {
+      initDateNav();
       initTabs();
       initModal();
       initSettings();
