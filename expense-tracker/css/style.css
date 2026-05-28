@@ -26,6 +26,94 @@ input, button, textarea, select {
   display: none !important;
 }
 
+/* ===== 2b. Toast ===== */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  pointer-events: none;
+}
+
+.toast {
+  background: rgba(0,0,0,0.78);
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 22px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  white-space: nowrap;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== 2c. Global Animations ===== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOutDown {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(20px); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes scaleOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.95); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideOutLeft {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-40px); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideOutRight {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(40px); }
+}
+
+@keyframes highlightFlash {
+  0%   { background: #e8f5e9; }
+  100% { background: #fff; }
+}
+
+@keyframes rippleExpand {
+  0%   { transform: scale(0); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* Button press bounce */
+button, .cat-btn, .pay-label, .nav-btn, .stats-tab, .date-arrow, .fab {
+  transition: transform 0.12s ease;
+}
+
+button:active, .cat-btn:active, .pay-label:active, .nav-btn:active, .stats-tab:active, .date-arrow:active {
+  transform: scale(0.96);
+}
+
 /* ===== 3. Page Switching ===== */
 .page {
   display: none;
@@ -33,6 +121,19 @@ input, button, textarea, select {
 }
 .page.active {
   display: block;
+  animation: fadeInUp 0.25s ease-out;
+}
+.page.slide-out-left {
+  animation: slideOutLeft 0.2s ease-in forwards;
+}
+.page.slide-out-right {
+  animation: slideOutRight 0.2s ease-in forwards;
+}
+.page.slide-in-right {
+  animation: slideInRight 0.25s ease-out;
+}
+.page.slide-in-left {
+  animation: slideInLeft 0.25s ease-out;
 }
 
 /* ===== 4. Bottom Navigation ===== */
@@ -230,6 +331,10 @@ input, button, textarea, select {
   flex-shrink: 0;
 }
 
+.expense-item.highlight {
+  animation: highlightFlash 1s ease;
+}
+
 /* ===== 7. Swipe-to-Delete ===== */
 .delete-bg {
   position: absolute;
@@ -300,6 +405,21 @@ input, button, textarea, select {
 
 .modal-overlay.open {
   display: flex;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal-overlay.closing {
+  animation: fadeOut 0.2s ease-in forwards;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 .modal-content {
@@ -317,6 +437,15 @@ input, button, textarea, select {
 @keyframes slideUp {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
+}
+
+.modal-overlay.closing .modal-content {
+  animation: slideDown 0.2s ease-in forwards;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
 }
 
 /* ===== 11. Record Modal — Mode Switch ===== */
@@ -489,14 +618,14 @@ input, button, textarea, select {
   cursor: pointer;
 }
 
-/* ===== 17. Voice Button ===== */
+/* ===== 17. Voice Button (Press-and-Hold) ===== */
 .voice-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 30px 16px;
+  padding: 40px 16px;
   border: 2px dashed #ccc;
   border-radius: 16px;
   background: #fff;
@@ -505,24 +634,75 @@ input, button, textarea, select {
   cursor: pointer;
   gap: 10px;
   -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .voice-btn .mic-icon {
-  font-size: 36px;
+  font-size: 42px;
   line-height: 1;
+  transition: transform 0.2s ease;
 }
 
 .voice-btn.recording {
-  border-color: #e74c3c;
-  border-style: dashed;
-  background: #fff5f5;
-  color: #e74c3c;
-  animation: pulse 1.2s infinite;
+  border-color: #4CAF50;
+  border-style: solid;
+  background: #e8f5e9;
+  color: #2e7d32;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.6; }
+.voice-btn.recording .mic-icon {
+  transform: scale(1.15);
+}
+
+/* Ripple effect */
+.voice-ripple {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(76, 175, 80, 0.3);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.voice-btn.recording .voice-ripple {
+  animation: rippleExpand 1s ease-out infinite;
+}
+
+/* Volume bars */
+.voice-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 28px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.voice-btn.recording .voice-bars {
+  opacity: 1;
+}
+
+.voice-bar {
+  width: 4px;
+  background: #4CAF50;
+  border-radius: 2px;
+  transition: height 0.1s ease;
+}
+
+.voice-btn.recording .voice-bar:nth-child(1) { animation: barPulse 0.6s ease-in-out infinite 0s; }
+.voice-btn.recording .voice-bar:nth-child(2) { animation: barPulse 0.6s ease-in-out infinite 0.1s; }
+.voice-btn.recording .voice-bar:nth-child(3) { animation: barPulse 0.6s ease-in-out infinite 0.2s; }
+.voice-btn.recording .voice-bar:nth-child(4) { animation: barPulse 0.6s ease-in-out infinite 0.3s; }
+.voice-btn.recording .voice-bar:nth-child(5) { animation: barPulse 0.6s ease-in-out infinite 0.4s; }
+
+@keyframes barPulse {
+  0%, 100% { height: 6px; }
+  50%      { height: 24px; }
 }
 
 /* ===== 18. Parsed Result Card ===== */

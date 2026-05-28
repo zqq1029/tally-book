@@ -131,17 +131,58 @@ var App = (function () {
     }, 30000);
   }
 
-  // ── 1. Tab Switching ─────────────────────────────────────────
+  // ── 0. Toast ────────────────────────────────────────────────
+
+  function showToast(msg, duration) {
+    var container = $('#toast-container');
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    container.appendChild(el);
+    requestAnimationFrame(function () { el.classList.add('show'); });
+    setTimeout(function () {
+      el.classList.remove('show');
+      setTimeout(function () { el.remove(); }, 300);
+    }, duration || 1800);
+  }
+
+  // ── 1. Tab Switching (with direction-aware animation) ──────
+
+  var pageOrder = ['home', 'stats', 'settings'];
+  var currentPageId = 'home';
 
   function initTabs() {
     $$('.nav-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var page = btn.getAttribute('data-page');
+        if (page === currentPageId) return;
+
+        var fromIdx = pageOrder.indexOf(currentPageId);
+        var toIdx = pageOrder.indexOf(page);
+        var direction = toIdx > fromIdx ? 'left' : 'right';
+
+        var oldPage = $('#page-' + currentPageId);
+        var newPage = $('#page-' + page);
+        if (!oldPage || !newPage) return;
+
+        // Animate out
+        oldPage.classList.remove('active', 'slide-in-left', 'slide-in-right');
+        oldPage.classList.add(direction === 'left' ? 'slide-out-left' : 'slide-out-right');
+
+        setTimeout(function () {
+          oldPage.classList.remove('slide-out-left', 'slide-out-right');
+          oldPage.style.display = 'none';
+
+          // Animate in
+          newPage.classList.add('active', direction === 'left' ? 'slide-in-right' : 'slide-in-left');
+          setTimeout(function () {
+            newPage.classList.remove('slide-in-right', 'slide-in-left');
+          }, 250);
+        }, 200);
+
         $$('.nav-btn').forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
-        $$('.page').forEach(function (p) { p.classList.remove('active'); });
-        var target = $('#page-' + page);
-        if (target) target.classList.add('active');
+        currentPageId = page;
 
         if (page === 'home') renderHome();
         if (page === 'settings') renderSettings();
@@ -229,9 +270,15 @@ var App = (function () {
       item.appendChild(deleteBtn);
       deleteBtn.addEventListener('click', function (e) {
         e.stopPropagation();
-        Storage.deleteExpense(id).then(function () {
-          refreshAllData().then(function () { renderHome(); });
-        });
+        item.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+        item.style.transform = 'translateX(0)';
+        item.style.opacity = '0';
+        setTimeout(function () {
+          Storage.deleteExpense(id).then(function () {
+            refreshAllData().then(function () { renderHome(); });
+            showToast('已删除');
+          });
+        }, 200);
       });
       return deleteBtn;
     }
@@ -314,10 +361,8 @@ var App = (function () {
       e.target.value = '';
     });
 
-    // Voice button
-    $('#voice-btn').addEventListener('click', function () {
-      toggleVoiceInput();
-    });
+    // Voice (press-and-hold)
+    initVoice();
   }
 
   function openModal(expense) {
@@ -354,7 +399,11 @@ var App = (function () {
   }
 
   function closeModal() {
-    $('#record-modal').classList.remove('open');
+    var modal = $('#record-modal');
+    modal.classList.add('closing');
+    setTimeout(function () {
+      modal.classList.remove('open', 'closing');
+    }, 200);
     editingId = null;
   }
 
@@ -471,117 +520,157 @@ var App = (function () {
     }
 
     promise.then(function () {
+      var savedId = editingId;
       closeModal();
-      refreshAllData().then(function () { renderHome(); });
+      refreshAllData().then(function () {
+        renderHome();
+        if (!savedId) {
+          // New item: highlight last added
+          var items = $$('.expense-item');
+          if (items.length > 0) {
+            var first = items[0];
+            first.classList.add('highlight');
+            first.addEventListener('animationend', function () {
+              first.classList.remove('highlight');
+            }, { once: true });
+          }
+        }
+      });
+      showToast('已保存');
     }).catch(function (err) {
-      alert('保存失败: ' + err.message);
+      showToast('保存失败: ' + err.message);
     });
   }
 
-  // ── 5. Voice Input ───────────────────────────────────────────
+  // ── 5. Voice Input (Press-and-Hold) ────────────────────────
 
   var recognition = null;
   var isRecording = false;
+  var voiceHoldTimer = null;
 
-  function toggleVoiceInput() {
+  function initVoice() {
+    var btn = $('#voice-btn');
+    if (!btn) return;
+
+    // Touch events (mobile)
+    btn.addEventListener('touchstart', function (e) {
+      e.preventDefault();
+      startVoiceHold();
+    }, { passive: false });
+
+    btn.addEventListener('touchend', function (e) {
+      e.preventDefault();
+      stopVoiceHold();
+    }, { passive: false });
+
+    btn.addEventListener('touchcancel', function () {
+      stopVoiceHold();
+    });
+
+    // Mouse events (desktop)
+    btn.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      startVoiceHold();
+    });
+
+    btn.addEventListener('mouseup', function () {
+      stopVoiceHold();
+    });
+
+    btn.addEventListener('mouseleave', function () {
+      if (isRecording) stopVoiceHold();
+    });
+  }
+
+  function startVoiceHold() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert('您的浏览器不支持语音识别');
+      showToast('您的浏览器不支持语音识别');
       return;
     }
 
-    if (isRecording) {
-      stopVoice();
-      return;
-    }
+    var btn = $('#voice-btn');
+    btn.classList.add('recording');
+    $('#voice-status').textContent = '正在聆听...';
 
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
     recognition.lang = 'zh-CN';
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
     recognition.onstart = function () {
       isRecording = true;
-      $('#voice-btn').classList.add('recording');
-      $('#voice-status').textContent = '正在聆听...';
     };
 
     recognition.onresult = function (e) {
-      var transcript = e.results[0][0].transcript;
+      var transcript = '';
+      for (var i = 0; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+      }
       $('#voice-transcript').textContent = transcript;
 
-      var parsed = VoiceParser.parse(transcript);
-
-      if (parsed.amount && parsed.amount > 0) {
-        // Show parsed result card
-        $('#voice-result').classList.remove('hidden');
-        var resultHtml = '';
-        resultHtml += '<div>金额: ¥' + parsed.amount.toFixed(2) + '</div>';
-        if (parsed.category) resultHtml += '<div>分类: ' + parsed.category + '</div>';
-        if (parsed.paymentMethod) resultHtml += '<div>支付方式: ' + parsed.paymentMethod + '</div>';
-        if (parsed.note) resultHtml += '<div>备注: ' + parsed.note + '</div>';
-        resultHtml += '<button class="btn-save" id="voice-apply" style="margin-top:10px;width:100%;">确认使用</button>';
-        $('#parsed-result').innerHTML = resultHtml;
-
-        currentVoiceResult = parsed;
-
-        // Bind apply button
-        document.getElementById('voice-apply').addEventListener('click', function () {
-          applyVoiceResult();
-        });
-      } else {
-        // Fallback: put transcript into note, switch to manual
-        $('#note-input').value = transcript;
-        // Switch to manual mode
-        $$('.mode-btn').forEach(function (b) { b.classList.remove('active'); });
-        $$('.mode-btn')[0].classList.add('active');
-        $('#manual-mode').classList.remove('hidden');
-        $('#voice-mode').classList.add('hidden');
+      // If final result, process immediately
+      if (e.results[e.results.length - 1].isFinal) {
+        processVoiceResult(transcript);
       }
     };
 
     recognition.onerror = function (e) {
       isRecording = false;
-      $('#voice-btn').classList.remove('recording');
-      $('#voice-status').textContent = '识别失败，请重试';
+      btn.classList.remove('recording');
+      if (e.error === 'no-speech') {
+        $('#voice-status').textContent = '没有检测到语音';
+      } else {
+        $('#voice-status').textContent = '识别失败，请重试';
+      }
+      setTimeout(function () { $('#voice-status').textContent = '按住说话'; }, 2000);
     };
 
     recognition.onend = function () {
       isRecording = false;
-      $('#voice-btn').classList.remove('recording');
-      $('#voice-status').textContent = '点击开始说话';
+      btn.classList.remove('recording');
+      $('#voice-status').textContent = '按住说话';
     };
 
     recognition.start();
   }
 
-  function stopVoice() {
-    if (recognition) {
+  function stopVoiceHold() {
+    if (recognition && isRecording) {
       recognition.stop();
     }
-    isRecording = false;
-    $('#voice-btn').classList.remove('recording');
-    $('#voice-status').textContent = '点击开始说话';
+    var btn = $('#voice-btn');
+    if (btn) btn.classList.remove('recording');
   }
 
-  function applyVoiceResult() {
-    if (!currentVoiceResult) return;
-    var r = currentVoiceResult;
+  function processVoiceResult(transcript) {
+    var parsed = VoiceParser.parse(transcript);
 
-    if (r.amount) $('#amount-input').value = r.amount;
-    if (r.category) selectedCategory = r.category;
-    if (r.paymentMethod) selectedPaymentMethod = r.paymentMethod;
-    if (r.note) $('#note-input').value = r.note;
+    if (parsed.amount && parsed.amount > 0) {
+      // Auto-apply result directly
+      if (parsed.amount) $('#amount-input').value = parsed.amount;
+      if (parsed.category) selectedCategory = parsed.category;
+      if (parsed.paymentMethod) selectedPaymentMethod = parsed.paymentMethod;
+      if (parsed.note) $('#note-input').value = parsed.note;
 
-    // Switch to manual mode
-    $$('.mode-btn').forEach(function (b) { b.classList.remove('active'); });
-    $$('.mode-btn')[0].classList.add('active');
-    $('#manual-mode').classList.remove('hidden');
-    $('#voice-mode').classList.add('hidden');
+      // Switch to manual mode to show filled values
+      $$('.mode-btn').forEach(function (b) { b.classList.remove('active'); });
+      $$('.mode-btn')[0].classList.add('active');
+      $('#manual-mode').classList.remove('hidden');
+      $('#voice-mode').classList.add('hidden');
 
-    // Re-render selects
-    renderCategoryGrid();
-    renderPaymentMethods();
+      renderCategoryGrid();
+      renderPaymentMethods();
+      showToast('已识别: ¥' + parsed.amount.toFixed(2));
+    } else {
+      // Fallback: put transcript into note
+      $('#note-input').value = transcript;
+      $$('.mode-btn').forEach(function (b) { b.classList.remove('active'); });
+      $$('.mode-btn')[0].classList.add('active');
+      $('#manual-mode').classList.remove('hidden');
+      $('#voice-mode').classList.add('hidden');
+      showToast('未识别金额，已填入备注');
+    }
 
     currentVoiceResult = null;
   }

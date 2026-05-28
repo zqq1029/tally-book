@@ -95,8 +95,16 @@
       <!-- 语音输入区 -->
       <div id="voice-mode" class="hidden">
         <button class="voice-btn" id="voice-btn">
-          <span class="mic-icon">🎤</span>
-          <span id="voice-status">点击开始说话</span>
+          <span class="voice-ripple"></span>
+          <span class="mic-icon"> </span>
+          <div class="voice-bars">
+            <div class="voice-bar"></div>
+            <div class="voice-bar"></div>
+            <div class="voice-bar"></div>
+            <div class="voice-bar"></div>
+            <div class="voice-bar"></div>
+          </div>
+          <span id="voice-status">按住说话</span>
         </button>
         <div id="voice-result" class="hidden">
           <p id="voice-transcript"></p>
@@ -111,6 +119,9 @@
   </div>
 
   <!-- 底部导航 -->
+
+  <!-- Toast 提示 -->
+  <div class="toast-container" id="toast-container"></div>
   <nav class="bottom-nav">
     <button class="nav-btn active" data-page="home">
       <span class="nav-icon">📝</span>
