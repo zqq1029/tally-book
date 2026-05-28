@@ -146,10 +146,19 @@ var App = (function () {
     }, duration || 1800);
   }
 
-  // ── 1. Tab Switching (with direction-aware animation) ──────
+  // ── 1. Tab Switching (KeepAlive — no re-render on revisit) ─
 
   var pageOrder = ['home', 'stats', 'settings'];
   var currentPageId = 'home';
+  var pageRendered = {}; // track which pages have been rendered
+
+  function invalidatePage(pageId) {
+    if (pageId) {
+      delete pageRendered[pageId];
+    } else {
+      pageRendered = {};
+    }
+  }
 
   function initTabs() {
     $$('.nav-btn').forEach(function (btn) {
@@ -173,7 +182,8 @@ var App = (function () {
           oldPage.classList.remove('slide-out-left', 'slide-out-right');
           oldPage.style.display = 'none';
 
-          // Animate in
+          // Animate in — just show, don't re-render if already loaded
+          newPage.style.display = '';
           newPage.classList.add('active', direction === 'left' ? 'slide-in-right' : 'slide-in-left');
           setTimeout(function () {
             newPage.classList.remove('slide-in-right', 'slide-in-left');
@@ -184,9 +194,13 @@ var App = (function () {
         btn.classList.add('active');
         currentPageId = page;
 
-        if (page === 'home') renderHome();
-        if (page === 'settings') renderSettings();
-        if (page === 'stats') renderStats();
+        // Only render on first visit, or if data changed
+        if (!pageRendered[page]) {
+          pageRendered[page] = true;
+          if (page === 'home') renderHome();
+          if (page === 'settings') renderSettings();
+          if (page === 'stats') renderStats();
+        }
       });
     });
   }
@@ -275,7 +289,10 @@ var App = (function () {
         item.style.opacity = '0';
         setTimeout(function () {
           Storage.deleteExpense(id).then(function () {
-            refreshAllData().then(function () { renderHome(); });
+            refreshAllData().then(function () {
+              invalidatePage('stats');
+              renderHome();
+            });
             showToast('已删除');
           });
         }, 200);
@@ -533,6 +550,7 @@ var App = (function () {
       var savedId = editingId;
       closeModal();
       refreshAllData().then(function () {
+        invalidatePage('stats'); // stats needs refresh
         renderHome();
         if (!savedId) {
           // New item: highlight last added
@@ -556,40 +574,106 @@ var App = (function () {
 
   var recognition = null;
   var isRecording = false;
-  var voiceHoldTimer = null;
+  var activeTouchId = null;   // track which finger started the recording
+  var fingerOutside = false;  // true when finger slides outside button
 
   function initVoice() {
     var btn = $('#voice-btn');
     if (!btn) return;
 
-    // Touch events (mobile)
+    // ── Touch events (mobile) ──
     btn.addEventListener('touchstart', function (e) {
       e.preventDefault();
+      var touch = e.changedTouches[0];
+      activeTouchId = touch.identifier;
+      fingerOutside = false;
       startVoiceHold();
+    }, { passive: false });
+
+    btn.addEventListener('touchmove', function (e) {
+      e.preventDefault();
+      if (!isRecording || activeTouchId === null) return;
+      var touch = findActiveTouch(e.touches);
+      if (!touch) return;
+      var rect = btn.getBoundingClientRect();
+      var inside = touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                   touch.clientY >= rect.top && touch.clientY <= rect.bottom;
+      if (!inside && !fingerOutside) {
+        fingerOutside = true;
+        $('#voice-status').textContent = '松手取消';
+        btn.classList.add('cancel-zone');
+      } else if (inside && fingerOutside) {
+        fingerOutside = false;
+        $('#voice-status').textContent = '正在聆听...';
+        btn.classList.remove('cancel-zone');
+      }
     }, { passive: false });
 
     btn.addEventListener('touchend', function (e) {
       e.preventDefault();
-      stopVoiceHold();
+      var touch = findActiveTouch(e.changedTouches);
+      if (!touch) return; // not our finger
+      activeTouchId = null;
+      if (fingerOutside) {
+        // Cancel: discard result
+        cancelVoice();
+      } else {
+        stopVoiceHold();
+      }
     }, { passive: false });
 
     btn.addEventListener('touchcancel', function () {
-      stopVoiceHold();
+      activeTouchId = null;
+      cancelVoice();
     });
 
-    // Mouse events (desktop)
+    // ── Mouse events (desktop) ──
     btn.addEventListener('mousedown', function (e) {
       e.preventDefault();
+      fingerOutside = false;
       startVoiceHold();
     });
 
+    btn.addEventListener('mousemove', function (e) {
+      if (!isRecording) return;
+      var rect = btn.getBoundingClientRect();
+      var inside = e.clientX >= rect.left && e.clientX <= rect.right &&
+                   e.clientY >= rect.top && e.clientY <= rect.bottom;
+      if (!inside && !fingerOutside) {
+        fingerOutside = true;
+        $('#voice-status').textContent = '松手取消';
+        btn.classList.add('cancel-zone');
+      } else if (inside && fingerOutside) {
+        fingerOutside = false;
+        $('#voice-status').textContent = '正在聆听...';
+        btn.classList.remove('cancel-zone');
+      }
+    });
+
     btn.addEventListener('mouseup', function () {
-      stopVoiceHold();
+      if (!isRecording) return;
+      if (fingerOutside) {
+        cancelVoice();
+      } else {
+        stopVoiceHold();
+      }
     });
 
     btn.addEventListener('mouseleave', function () {
-      if (isRecording) stopVoiceHold();
+      // Don't cancel — finger may come back. Just show hint.
+      if (isRecording && !fingerOutside) {
+        fingerOutside = true;
+        $('#voice-status').textContent = '松手取消';
+        btn.classList.add('cancel-zone');
+      }
     });
+  }
+
+  function findActiveTouch(touchList) {
+    for (var i = 0; i < touchList.length; i++) {
+      if (touchList[i].identifier === activeTouchId) return touchList[i];
+    }
+    return null;
   }
 
   function startVoiceHold() {
@@ -600,6 +684,7 @@ var App = (function () {
 
     var btn = $('#voice-btn');
     btn.classList.add('recording');
+    btn.classList.remove('cancel-zone');
     $('#voice-status').textContent = '正在聆听...';
 
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -619,17 +704,24 @@ var App = (function () {
       }
       $('#voice-transcript').textContent = transcript;
 
-      // If final result, process immediately
+      // If final result and finger was released, process
       if (e.results[e.results.length - 1].isFinal) {
-        processVoiceResult(transcript);
+        // Don't auto-process on final — wait for touchend/mouseup
+        // Store transcript for processing on release
+        recognition._lastTranscript = transcript;
       }
     };
 
     recognition.onerror = function (e) {
       isRecording = false;
-      btn.classList.remove('recording');
+      var btn = $('#voice-btn');
+      btn.classList.remove('recording', 'cancel-zone');
       if (e.error === 'no-speech') {
         $('#voice-status').textContent = '没有检测到语音';
+      } else if (e.error === 'aborted') {
+        // User cancelled, just reset
+        $('#voice-status').textContent = '按住说话';
+        return;
       } else {
         $('#voice-status').textContent = '识别失败，请重试';
       }
@@ -638,19 +730,42 @@ var App = (function () {
 
     recognition.onend = function () {
       isRecording = false;
-      btn.classList.remove('recording');
+      var btn = $('#voice-btn');
+      btn.classList.remove('recording', 'cancel-zone');
+      // If we have a transcript and it wasn't cancelled, process it
+      if (recognition && recognition._lastTranscript && !recognition._cancelled) {
+        processVoiceResult(recognition._lastTranscript);
+      }
+      recognition = null;
       $('#voice-status').textContent = '按住说话';
     };
 
+    recognition._cancelled = false;
     recognition.start();
   }
 
   function stopVoiceHold() {
-    if (recognition && isRecording) {
-      recognition.stop();
+    if (recognition) {
+      // Mark as not cancelled — onend will process the result
+      recognition._cancelled = false;
+      if (isRecording) recognition.stop();
     }
     var btn = $('#voice-btn');
-    if (btn) btn.classList.remove('recording');
+    if (btn) btn.classList.remove('recording', 'cancel-zone');
+    activeTouchId = null;
+  }
+
+  function cancelVoice() {
+    if (recognition) {
+      recognition._cancelled = true;
+      if (isRecording) recognition.stop();
+    }
+    var btn = $('#voice-btn');
+    if (btn) btn.classList.remove('recording', 'cancel-zone');
+    activeTouchId = null;
+    fingerOutside = false;
+    $('#voice-status').textContent = '按住说话';
+    showToast('已取消');
   }
 
   function processVoiceResult(transcript) {
@@ -830,7 +945,11 @@ var App = (function () {
           var data = JSON.parse(ev.target.result);
           Storage.importData(data).then(function (count) {
             alert('成功导入 ' + count + ' 条记录');
-            refreshAllData().then(function () { renderHome(); renderSettings(); });
+            refreshAllData().then(function () {
+              invalidatePage(); // all pages need refresh
+              renderHome();
+              renderSettings();
+            });
           });
         } catch (err) {
           alert('导入失败: 文件格式错误');
