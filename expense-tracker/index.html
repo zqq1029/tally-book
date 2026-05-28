@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#4CAF50">
+  <title>记账本</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 今日记账 -->
+  <section id="page-home" class="page active">
+    <div class="total-card">
+      <span class="total-label">今日支出</span>
+      <span class="total-amount" id="today-total">¥0.00</span>
+    </div>
+    <div id="expense-list"></div>
+    <div class="empty-state" id="empty-state">
+      <p>今天还没有记账</p>
+      <p>点击右下角 + 开始记账</p>
+    </div>
+    <button class="fab" id="fab-add">+</button>
+  </section>
+
+  <!-- 统计 -->
+  <section id="page-stats" class="page">
+    <div class="stats-tabs">
+      <button class="stats-tab active" data-period="day">日</button>
+      <button class="stats-tab" data-period="week">周</button>
+      <button class="stats-tab" data-period="month">月</button>
+      <button class="stats-tab" data-period="year">年</button>
+    </div>
+    <div id="stats-content"></div>
+  </section>
+
+  <!-- 设置 -->
+  <section id="page-settings" class="page">
+    <h2>设置</h2>
+    <div class="settings-group">
+      <h3>分类管理</h3>
+      <div id="category-list"></div>
+      <button class="btn-add" id="add-category-btn">+ 添加分类</button>
+    </div>
+    <div class="settings-group">
+      <h3>支付方式</h3>
+      <div id="payment-list"></div>
+      <button class="btn-add" id="add-payment-btn">+ 添加支付方式</button>
+    </div>
+    <div class="settings-group">
+      <h3>数据管理</h3>
+      <button class="btn-secondary" id="export-btn">导出数据</button>
+      <button class="btn-secondary" id="import-btn">导入数据</button>
+      <input type="file" id="import-file" accept=".json" hidden>
+      <button class="btn-danger" id="clear-data-btn">清空所有数据</button>
+    </div>
+    <div class="settings-group">
+      <h3>关于</h3>
+      <p>记账本 v1.0.0</p>
+    </div>
+  </section>
+
+  <!-- 记录弹窗 -->
+  <div class="modal-overlay" id="record-modal">
+    <div class="modal-content">
+      <div class="record-mode-switch">
+        <button class="mode-btn active" data-mode="manual">手动填写</button>
+        <button class="mode-btn" data-mode="voice">语音输入</button>
+      </div>
+      <!-- 手动填写区 -->
+      <div id="manual-mode">
+        <div class="category-grid" id="category-grid"></div>
+        <div class="amount-input">
+          <span class="currency">¥</span>
+          <input type="number" id="amount-input" placeholder="0.00" step="0.01" inputmode="decimal">
+        </div>
+        <div class="payment-methods" id="payment-methods"></div>
+        <input type="text" id="note-input" placeholder="备注（可选）">
+        <div class="photo-area">
+          <div class="photo-previews" id="photo-previews"></div>
+          <label class="add-photo-btn">
+            + 照片
+            <input type="file" id="photo-input" accept="image/*" hidden multiple>
+          </label>
+        </div>
+      </div>
+      <!-- 语音输入区 -->
+      <div id="voice-mode" class="hidden">
+        <button class="voice-btn" id="voice-btn">
+          <span class="mic-icon">🎤</span>
+          <span id="voice-status">点击开始说话</span>
+        </button>
+        <div id="voice-result" class="hidden">
+          <p id="voice-transcript"></p>
+          <div id="parsed-result"></div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="record-cancel">取消</button>
+        <button class="btn-save" id="record-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-page="home">
+      <span class="nav-icon">📝</span>
+      <span>记账</span>
+    </button>
+    <button class="nav-btn" data-page="stats">
+      <span class="nav-icon">📊</span>
+      <span>统计</span>
+    </button>
+    <button class="nav-btn" data-page="settings">
+      <span class="nav-icon">⚙️</span>
+      <span>设置</span>
+    </button>
+  </nav>
+
+  <script src="js/chart.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/voice-parser.js"></script>
+  <script src="js/statistics.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
