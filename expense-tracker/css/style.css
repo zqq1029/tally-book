@@ -1,0 +1,784 @@
+/* ===== 1. Global Reset & Body ===== */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+  max-width: 480px;
+  margin: 0 auto;
+  padding-bottom: 70px;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+input, button, textarea, select {
+  font-family: inherit;
+}
+
+/* ===== 2. Utility ===== */
+.hidden {
+  display: none !important;
+}
+
+/* ===== 3. Page Switching ===== */
+.page {
+  display: none;
+  padding: 16px;
+}
+.page.active {
+  display: block;
+}
+
+/* ===== 4. Bottom Navigation ===== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: 56px;
+  background: #fff;
+  display: flex;
+  box-shadow: 0 -1px 6px rgba(0, 0, 0, 0.08);
+  z-index: 100;
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  color: #999;
+  font-size: 11px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.2s;
+}
+
+.nav-btn .nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.nav-btn.active {
+  color: #4CAF50;
+}
+
+/* ===== 5. Today Total Card ===== */
+.total-card {
+  background: linear-gradient(135deg, #4CAF50, #66BB6A);
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: center;
+  color: #fff;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.total-label {
+  display: block;
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 6px;
+}
+
+.total-amount {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* ===== 6. Expense List ===== */
+#expense-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.expense-item {
+  position: relative;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+
+.expense-item .item-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  border-radius: 10px;
+}
+
+.expense-item .item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.expense-item .item-category {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+
+.expense-item .item-note {
+  font-size: 12px;
+  color: #999;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expense-item .item-amount {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e74c3c;
+  flex-shrink: 0;
+}
+
+/* ===== 7. Swipe-to-Delete ===== */
+.delete-bg {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  background: #e74c3c;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 12px 12px 0;
+}
+
+/* ===== 8. Empty State ===== */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #bbb;
+}
+
+.empty-state p {
+  font-size: 14px;
+  line-height: 2;
+}
+
+/* ===== 9. Floating Action Button ===== */
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: 76px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #4CAF50;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 300;
+  border: none;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  cursor: pointer;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.fab:active {
+  transform: scale(0.92);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+/* ===== 10. Modal ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 200;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.modal-overlay.open {
+  display: flex;
+}
+
+.modal-content {
+  background: #fff;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 16px 24px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  animation: slideUp 0.25s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ===== 11. Record Modal — Mode Switch ===== */
+.record-mode-switch {
+  display: flex;
+  background: #f0f0f0;
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 16px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s;
+}
+
+.mode-btn.active {
+  background: #fff;
+  color: #333;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== 12. Category Grid ===== */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.cat-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: #f9f9f9;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cat-btn .cat-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.cat-btn.active {
+  border-color: #4CAF50;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* ===== 13. Amount Input ===== */
+.amount-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  background: #f9f9f9;
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+
+.amount-input .currency {
+  font-size: 24px;
+  font-weight: 700;
+  color: #e74c3c;
+}
+
+.amount-input input {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: 28px;
+  font-weight: 700;
+  color: #e74c3c;
+  outline: none;
+  min-width: 0;
+}
+
+.amount-input input::placeholder {
+  color: #ccc;
+}
+
+/* ===== 14. Payment Method Labels ===== */
+.payment-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.pay-label {
+  padding: 6px 14px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s;
+}
+
+.pay-label.active {
+  border-color: #4CAF50;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* ===== 15. Note Input ===== */
+.modal-content #note-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #333;
+  background: #f9f9f9;
+  outline: none;
+  margin-bottom: 14px;
+}
+
+.modal-content #note-input::placeholder {
+  color: #bbb;
+}
+
+/* ===== 16. Photo Area ===== */
+.photo-area {
+  margin-bottom: 16px;
+}
+
+.photo-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.photo-previews img {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.add-photo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #999;
+  cursor: pointer;
+}
+
+/* ===== 17. Voice Button ===== */
+.voice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 30px 16px;
+  border: 2px dashed #ccc;
+  border-radius: 16px;
+  background: #fff;
+  font-size: 14px;
+  color: #888;
+  cursor: pointer;
+  gap: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.voice-btn .mic-icon {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.voice-btn.recording {
+  border-color: #e74c3c;
+  border-style: dashed;
+  background: #fff5f5;
+  color: #e74c3c;
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+
+/* ===== 18. Parsed Result Card ===== */
+#parsed-result {
+  background: #f0faf0;
+  border: 1px solid #c8e6c9;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: #2e7d32;
+  line-height: 1.6;
+}
+
+#voice-transcript {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+/* ===== 19. Buttons ===== */
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn-cancel,
+.btn-save {
+  flex: 1;
+  padding: 12px 0;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-cancel {
+  background: #eee;
+  color: #666;
+}
+
+.btn-save {
+  background: #4CAF50;
+  color: #fff;
+}
+
+.btn-cancel:active,
+.btn-save:active {
+  opacity: 0.8;
+}
+
+.btn-secondary {
+  display: block;
+  width: 100%;
+  padding: 12px 0;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+  margin-bottom: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-secondary:last-child {
+  margin-bottom: 0;
+}
+
+.btn-danger {
+  display: block;
+  width: 100%;
+  padding: 12px 0;
+  border: 1px solid #e74c3c;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e74c3c;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-add {
+  display: block;
+  width: 100%;
+  padding: 10px 0;
+  border: 2px dashed #ccc;
+  border-radius: 10px;
+  background: none;
+  font-size: 14px;
+  color: #999;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  margin-top: 8px;
+}
+
+.btn-add:active {
+  border-color: #aaa;
+}
+
+/* ===== 20. Statistics — Tabs ===== */
+.stats-tabs {
+  display: flex;
+  background: #fff;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.stats-tab {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #888;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s;
+}
+
+.stats-tab.active {
+  background: #4CAF50;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ===== 21. Statistics — Total Amount Card ===== */
+.stats-total-card {
+  background: linear-gradient(135deg, #4CAF50, #66BB6A);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  color: #fff;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.stats-total-card .total-label {
+  display: block;
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.stats-total-card .total-amount {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+/* ===== 22. Statistics — Chart Area ===== */
+.stats-chart {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  min-height: 200px;
+}
+
+.stats-chart canvas {
+  width: 100% !important;
+  max-height: 220px;
+}
+
+/* ===== 23. Statistics — Category Row ===== */
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.cat-row .cat-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.cat-row .cat-name {
+  flex: 0 0 50px;
+  font-size: 14px;
+  color: #555;
+}
+
+.cat-row .cat-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: #eee;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.cat-row .cat-bar {
+  height: 100%;
+  background: #4CAF50;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.cat-row .cat-amount {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e74c3c;
+  flex-shrink: 0;
+  min-width: 60px;
+  text-align: right;
+}
+
+/* ===== 24. Statistics — Navigation Arrows ===== */
+.stats-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.stats-nav button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 16px;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stats-nav button:active {
+  background: #f5f5f5;
+}
+
+.stats-nav .stats-period {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  min-width: 120px;
+  text-align: center;
+}
+
+/* ===== 25. Settings ===== */
+#page-settings h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.settings-group {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.settings-group h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.settings-group p {
+  font-size: 13px;
+  color: #999;
+}
+
+/* ===== 26. Tags ===== */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  background: #f0f0f0;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #555;
+  margin: 0 6px 8px 0;
+}
+
+.tag .tag-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.tag .tag-delete {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ddd;
+  border: none;
+  font-size: 10px;
+  color: #888;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 2px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tag .tag-delete:active {
+  background: #ccc;
+}
