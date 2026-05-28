@@ -574,8 +574,13 @@ var App = (function () {
 
   var recognition = null;
   var isRecording = false;
-  var activeTouchId = null;   // track which finger started the recording
-  var fingerOutside = false;  // true when finger slides outside button
+  var isHolding = false;      // true while finger is pressing button
+  var activeTouchId = null;
+  var fingerOutside = false;
+  var voiceStartTime = 0;
+  var maxRecordMs = 60000;    // 60s hard limit
+  var maxRecordTimer = null;
+  var allTranscripts = [];    // accumulate across restarts
 
   function initVoice() {
     var btn = $('#voice-btn');
@@ -592,7 +597,7 @@ var App = (function () {
 
     btn.addEventListener('touchmove', function (e) {
       e.preventDefault();
-      if (!isRecording || activeTouchId === null) return;
+      if (!isHolding || activeTouchId === null) return;
       var touch = findActiveTouch(e.touches);
       if (!touch) return;
       var rect = btn.getBoundingClientRect();
@@ -612,10 +617,10 @@ var App = (function () {
     btn.addEventListener('touchend', function (e) {
       e.preventDefault();
       var touch = findActiveTouch(e.changedTouches);
-      if (!touch) return; // not our finger
+      if (!touch) return;
       activeTouchId = null;
+      isHolding = false;
       if (fingerOutside) {
-        // Cancel: discard result
         cancelVoice();
       } else {
         stopVoiceHold();
@@ -624,6 +629,7 @@ var App = (function () {
 
     btn.addEventListener('touchcancel', function () {
       activeTouchId = null;
+      isHolding = false;
       cancelVoice();
     });
 
@@ -635,7 +641,7 @@ var App = (function () {
     });
 
     btn.addEventListener('mousemove', function (e) {
-      if (!isRecording) return;
+      if (!isHolding) return;
       var rect = btn.getBoundingClientRect();
       var inside = e.clientX >= rect.left && e.clientX <= rect.right &&
                    e.clientY >= rect.top && e.clientY <= rect.bottom;
@@ -651,7 +657,8 @@ var App = (function () {
     });
 
     btn.addEventListener('mouseup', function () {
-      if (!isRecording) return;
+      if (!isHolding) return;
+      isHolding = false;
       if (fingerOutside) {
         cancelVoice();
       } else {
@@ -660,8 +667,7 @@ var App = (function () {
     });
 
     btn.addEventListener('mouseleave', function () {
-      // Don't cancel — finger may come back. Just show hint.
-      if (isRecording && !fingerOutside) {
+      if (isHolding && !fingerOutside) {
         fingerOutside = true;
         $('#voice-status').textContent = '松手取消';
         btn.classList.add('cancel-zone');
@@ -682,11 +688,30 @@ var App = (function () {
       return;
     }
 
+    isHolding = true;
+    fingerOutside = false;
+    allTranscripts = [];
+    voiceStartTime = Date.now();
+
     var btn = $('#voice-btn');
     btn.classList.add('recording');
     btn.classList.remove('cancel-zone');
     $('#voice-status').textContent = '正在聆听...';
 
+    // 60s hard limit
+    clearTimeout(maxRecordTimer);
+    maxRecordTimer = setTimeout(function () {
+      if (isHolding) {
+        isHolding = false;
+        stopVoiceHold();
+        showToast('已达到最大录音时长');
+      }
+    }, maxRecordMs);
+
+    startRecognitionInstance();
+  }
+
+  function startRecognitionInstance() {
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
     recognition.lang = 'zh-CN';
@@ -698,43 +723,59 @@ var App = (function () {
     };
 
     recognition.onresult = function (e) {
-      var transcript = '';
+      var interimTranscript = '';
       for (var i = 0; i < e.results.length; i++) {
-        transcript += e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          // Accumulate final results
+          var finalText = e.results[i][0].transcript;
+          if (allTranscripts.indexOf(finalText) === -1) {
+            allTranscripts.push(finalText);
+          }
+        } else {
+          interimTranscript += e.results[i][0].transcript;
+        }
       }
-      $('#voice-transcript').textContent = transcript;
-
-      // If final result and finger was released, process
-      if (e.results[e.results.length - 1].isFinal) {
-        // Don't auto-process on final — wait for touchend/mouseup
-        // Store transcript for processing on release
-        recognition._lastTranscript = transcript;
-      }
+      // Show all final + current interim
+      var display = allTranscripts.join('') + interimTranscript;
+      $('#voice-transcript').textContent = display;
     };
 
     recognition.onerror = function (e) {
       isRecording = false;
+      if (e.error === 'aborted') return; // intentional abort for restart
+      if (e.error === 'no-speech') {
+        // No speech detected — if still holding, restart
+        if (isHolding) {
+          setTimeout(function () { startRecognitionInstance(); }, 100);
+          return;
+        }
+      }
+      // Other errors
       var btn = $('#voice-btn');
       btn.classList.remove('recording', 'cancel-zone');
-      if (e.error === 'no-speech') {
-        $('#voice-status').textContent = '没有检测到语音';
-      } else if (e.error === 'aborted') {
-        // User cancelled, just reset
-        $('#voice-status').textContent = '按住说话';
-        return;
-      } else {
-        $('#voice-status').textContent = '识别失败，请重试';
-      }
+      isHolding = false;
+      clearTimeout(maxRecordTimer);
+      $('#voice-status').textContent = '识别失败，请重试';
       setTimeout(function () { $('#voice-status').textContent = '按住说话'; }, 2000);
     };
 
     recognition.onend = function () {
       isRecording = false;
+      // KEY FIX: if user is still holding, restart recognition
+      // This handles the case where browser auto-stops after silence
+      if (isHolding && !recognition._cancelled) {
+        setTimeout(function () {
+          if (isHolding) startRecognitionInstance();
+        }, 100);
+        return;
+      }
+      // User released — process result
       var btn = $('#voice-btn');
       btn.classList.remove('recording', 'cancel-zone');
-      // If we have a transcript and it wasn't cancelled, process it
-      if (recognition && recognition._lastTranscript && !recognition._cancelled) {
-        processVoiceResult(recognition._lastTranscript);
+      clearTimeout(maxRecordTimer);
+      var fullTranscript = allTranscripts.join('');
+      if (fullTranscript && !recognition._cancelled) {
+        processVoiceResult(fullTranscript);
       }
       recognition = null;
       $('#voice-status').textContent = '按住说话';
@@ -745,10 +786,20 @@ var App = (function () {
   }
 
   function stopVoiceHold() {
+    clearTimeout(maxRecordTimer);
     if (recognition) {
-      // Mark as not cancelled — onend will process the result
       recognition._cancelled = false;
       if (isRecording) recognition.stop();
+      // If not recording yet (between restarts), trigger onend manually
+      else if (isHolding === false) {
+        isRecording = false;
+        var btn = $('#voice-btn');
+        btn.classList.remove('recording', 'cancel-zone');
+        var fullTranscript = allTranscripts.join('');
+        if (fullTranscript) processVoiceResult(fullTranscript);
+        recognition = null;
+        $('#voice-status').textContent = '按住说话';
+      }
     }
     var btn = $('#voice-btn');
     if (btn) btn.classList.remove('recording', 'cancel-zone');
@@ -756,6 +807,8 @@ var App = (function () {
   }
 
   function cancelVoice() {
+    clearTimeout(maxRecordTimer);
+    isHolding = false;
     if (recognition) {
       recognition._cancelled = true;
       if (isRecording) recognition.stop();
@@ -764,6 +817,7 @@ var App = (function () {
     if (btn) btn.classList.remove('recording', 'cancel-zone');
     activeTouchId = null;
     fingerOutside = false;
+    allTranscripts = [];
     $('#voice-status').textContent = '按住说话';
     showToast('已取消');
   }
@@ -771,71 +825,66 @@ var App = (function () {
   function processVoiceResult(transcript) {
     var parsed = VoiceParser.parse(transcript);
 
+    // Switch to manual mode
+    $$('.mode-btn').forEach(function (b) { b.classList.remove('active'); });
+    $$('.mode-btn')[0].classList.add('active');
+    $('#manual-mode').classList.remove('hidden');
+    $('#voice-mode').classList.add('hidden');
+
+    // Always fill amount and note
     if (parsed.amount && parsed.amount > 0) {
-      // Auto-apply result directly
-      if (parsed.amount) $('#amount-input').value = parsed.amount;
-      if (parsed.category) selectedCategory = parsed.category;
-      if (parsed.paymentMethod) selectedPaymentMethod = parsed.paymentMethod;
-      if (parsed.note) $('#note-input').value = parsed.note;
+      $('#amount-input').value = parsed.amount;
+    }
+    if (parsed.note) $('#note-input').value = parsed.note;
 
-      // Switch to manual mode to show filled values
-      $$('.mode-btn').forEach(function (b) { b.classList.remove('active'); });
-      $$('.mode-btn')[0].classList.add('active');
-      $('#manual-mode').classList.remove('hidden');
-      $('#voice-mode').classList.add('hidden');
-
-      // Render with matched highlight
+    // Handle category: high confidence → auto-select, low confidence → show candidates
+    if (parsed.category) {
+      selectedCategory = parsed.category;
       renderCategoryGrid(parsed.category);
-      renderPaymentMethods(parsed.paymentMethod);
+    } else if (parsed.candidates && parsed.candidates.length > 0) {
+      // Show candidate selection
+      renderCategoryGrid(null);
+      showCategoryCandidates(parsed.candidates);
+    } else {
+      renderCategoryGrid(null);
+    }
 
-      // Build toast message
+    // Handle payment method
+    if (parsed.paymentMethod) {
+      selectedPaymentMethod = parsed.paymentMethod;
+      renderPaymentMethods(parsed.paymentMethod);
+    } else {
+      renderPaymentMethods(null);
+    }
+
+    // Build toast
+    if (parsed.amount && parsed.amount > 0) {
       var parts = ['¥' + parsed.amount.toFixed(2)];
       if (parsed.category) parts.push(parsed.category);
       if (parsed.paymentMethod) parts.push(parsed.paymentMethod);
-      showToast('已匹配: ' + parts.join(' · '));
+      var confStr = Math.round(parsed.confidence * 100) + '%';
+      showToast('已识别 (' + confStr + '): ' + parts.join(' · '));
     } else {
-      // Fallback: try to match category/payment from transcript directly
-      var matchedCat = fuzzyMatch(transcript, Config.getAllCategories().map(function (c) { return c.name; }));
-      var matchedPay = fuzzyMatch(transcript, Config.getAllPaymentMethods().map(function (p) { return p.name; }));
-
-      if (matchedCat) selectedCategory = matchedCat;
-      if (matchedPay) selectedPaymentMethod = matchedPay;
-
-      // Put remaining text into note
-      $('#note-input').value = transcript;
-
-      $$('.mode-btn').forEach(function (b) { b.classList.remove('active'); });
-      $$('.mode-btn')[0].classList.add('active');
-      $('#manual-mode').classList.remove('hidden');
-      $('#voice-mode').classList.add('hidden');
-
-      renderCategoryGrid(matchedCat);
-      renderPaymentMethods(matchedPay);
-
-      if (matchedCat || matchedPay) {
-        var matched = [];
-        if (matchedCat) matched.push(matchedCat);
-        if (matchedPay) matched.push(matchedPay);
-        showToast('已匹配: ' + matched.join(' · '));
-      } else {
-        showToast('未匹配选项，已填入备注');
-      }
+      showToast('未识别金额，已填入备注');
     }
 
     currentVoiceResult = null;
   }
 
-  function fuzzyMatch(text, options) {
-    if (!text || !options || options.length === 0) return null;
-    // Exact match first
-    for (var i = 0; i < options.length; i++) {
-      if (text.indexOf(options[i]) !== -1) return options[i];
-    }
-    // Partial match (option is substring of text or vice versa)
-    for (var j = 0; j < options.length; j++) {
-      if (options[j].indexOf(text) !== -1) return options[j];
-    }
-    return null;
+  function showCategoryCandidates(candidates) {
+    var grid = $('#category-grid');
+    // Highlight candidate buttons
+    var buttons = grid.querySelectorAll('.cat-btn');
+    buttons.forEach(function (btn) {
+      var name = btn.querySelector('span:last-child').textContent;
+      if (candidates.indexOf(name) !== -1) {
+        btn.classList.add('candidate');
+        btn.style.animation = 'matchPulse 0.6s ease';
+      }
+    });
+    // Auto-scroll to first candidate
+    var first = grid.querySelector('.cat-btn.candidate');
+    if (first) scrollToElement(first);
   }
 
   // ── 6. Settings ──────────────────────────────────────────────
